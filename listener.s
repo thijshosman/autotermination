@@ -14,6 +14,8 @@ Class MyEventHandler
 	// Functions responds when the data in img is changed. The event flag has a value of 4
 	// img is the image to which the event handler has been added.
 
+	object aScript
+
 	void DataChanged(object self, number event_flag, image img)
 	{
 		//number sumval=sum(img)
@@ -53,7 +55,8 @@ Class MyEventHandler
 
 	void initUserScript(object self, )
 	{
-
+		aScript = alloc(userScript)
+		aScript.init()
 	}
 
 	void 
@@ -76,7 +79,7 @@ void startListener()
 	SPSCRIPT_dialogParameters()
 	
 	// init script
-	SPSCRIPT_init()
+	//SPSCRIPT_init()
 
 	// Check that at least one image is displayed
 	number nodocs=countdocumentwindowsoftype(5)
