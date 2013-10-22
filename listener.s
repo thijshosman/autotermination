@@ -28,14 +28,12 @@ Class MyEventHandler
 		counter=counter+1
 
 		// DEBUG, stop listener after 3 changes
-		if(counter>3)
-		{
-			img.ImageRemoveEventListener(EventToken)
-			result("LISTENER: Four changes have been detected - the Listener has been removed.\n")
-		}
+		//if(counter>3)
+		//{
+		//	img.ImageRemoveEventListener(EventToken)
+		//	result("LISTENER: Four changes have been detected - the Listener has been removed.\n")
+		//}
 	}
-
-	//void(object self, image img)
 
  
 	// This is the constructor it is invoked when the Listener object is created. In this case
@@ -45,12 +43,21 @@ Class MyEventHandler
 		Result("LISTENER: Event Handler Constructor called. Listener attached to image.\n")
 	}
 
-	// The destructor responds when either four changes have been detected or the image has been closed.
+	// The destructor responds the image has been closed.
 	~MyEventHandler(object self)
 	{
-		// if(counter>3) result("LISTENER: Event Handler Destructor called. Four changes detected.\n")
+		
 		result("LISTENER: Event Handler Destructor called. Image Closed.\n")
 	}
+
+
+	void initUserScript(object self, )
+	{
+
+	}
+
+	void 
+
 
 }
 
@@ -61,47 +68,47 @@ Class MyEventHandler
 
 
 
-	// Main script function - this is wrapped in a function to help avoid memory leaks.
+// Main script function - this is wrapped in a function to help avoid memory leaks.
+
+void startListener()
+{
+	// dialog, ask for script specific parameters
+	SPSCRIPT_dialogParameters()
 	
-	void startListener()
+	// init script
+	SPSCRIPT_init()
+
+	// Check that at least one image is displayed
+	number nodocs=countdocumentwindowsoftype(5)
+
+	if(nodocs<1)
 	{
-		// dialog, ask for script specific parameters
-		//SPSCRIPT_dialogParameters()
-		
-		// init script
-		//SPSCRIPT_init()
-
-		// Check that at least one image is displayed
-		number nodocs=countdocumentwindowsoftype(5)
-
-		if(nodocs<1)
-		{
-			showalert("Ensure a live image is displayed front-most.",2)
-			return
-		}
-
-		// Source the front-most image
-		image front:= GetFrontImage()
-
-		// Create the event listener object and attach it to the front-most image. The event map describes the mapping
-		// of the event to the reponse. The event is data_value_changed - this a predefined event in the DM scripting language
-		// DataChanged is the method in the EventHandler Class which is called when the event is detected.
-		// EventToken is a numerical id used to identity the listener. It is used to remove the event listener.
-
-		object EventListener=alloc(MyEventHandler)
-		string eventmap="data_value_changed:DataChanged"
-		
-		EventToken = front.ImageAddEventListener(EventListener, eventmap)
-
-
+		showalert("Ensure a live image is displayed front-most.",2)
+		return
 	}
 
-	void stopListener()
-	{
-		image front := GetFrontImage()
-		front.ImageRemoveEventListener(EventToken)
-		result("LISTENER:stopped\n")
-	}
+	// Source the front-most image
+	image front:= GetFrontImage()
+
+	// Create the event listener object and attach it to the front-most image. The event map describes the mapping
+	// of the event to the reponse. The event is data_value_changed - this a predefined event in the DM scripting language
+	// DataChanged is the method in the EventHandler Class which is called when the event is detected.
+	// EventToken is a numerical id used to identity the listener. It is used to remove the event listener.
+
+	object EventListener=alloc(MyEventHandler)
+	string eventmap="data_value_changed:DataChanged"
+	
+	EventToken = front.ImageAddEventListener(EventListener, eventmap)
+
+
+}
+
+void stopListener()
+{
+	image front := GetFrontImage()
+	front.ImageRemoveEventListener(EventToken)
+	result("LISTENER:stopped\n")
+}
 
 
 
@@ -112,6 +119,7 @@ startListener()
 
 
 number listener_running = 1
+
 // set the Tag
 TagGroupSetTagAsNumber( GetPersistentTagGroup(), "SPScript:listener running", listener_running )
 // get the Tag
