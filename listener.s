@@ -14,20 +14,23 @@ Class MyEventHandler
 	// Functions responds when the data in img is changed. The event flag has a value of 4
 	// img is the image to which the event handler has been added.
 
+	// initialize the user defined script that is going to be called
 	object aScript
 
 	void DataChanged(object self, number event_flag, image img)
 	{
-		//number sumval=sum(img)
-		result("LISTENER: Change: "+(counter+1)+"\n")
-		SPSCRIPT_listenerDetectImageUpdate()
+		
+		// notify userScript
+		result("LISTENER: Change sent, counter: "+(counter+1)+"\n")
+		aScript.listenerDetectImageUpdate()
+
 		//{
 		//	img.ImageRemoveEventListener()
 
 		//}
 
 		// Each time the image is changed, the counter is incremented. After four changes, the listener is removed
-		counter=counter+1
+		
 
 		// DEBUG, stop listener after 3 changes
 		//if(counter>3)
@@ -53,13 +56,17 @@ Class MyEventHandler
 	}
 
 
-	void initUserScript(object self, )
+	void initUserScript(object self)
 	{
+		//create userscript object 
 		aScript = alloc(userScript)
-		aScript.init()
-	}
+		
+		//display dialog with script specific parameters
+		aScript.dialogParameters()
 
-	void 
+		//init script (ie set parameters to zero)
+		//aScript.init()
+	}
 
 
 }
@@ -75,11 +82,9 @@ Class MyEventHandler
 
 void startListener()
 {
-	// dialog, ask for script specific parameters
-	SPSCRIPT_dialogParameters()
+	//TODO: make sure this function can only be installed once
 	
-	// init script
-	//SPSCRIPT_init()
+
 
 	// Check that at least one image is displayed
 	number nodocs=countdocumentwindowsoftype(5)
@@ -102,7 +107,9 @@ void startListener()
 	string eventmap="data_value_changed:DataChanged"
 	
 	EventToken = front.ImageAddEventListener(EventListener, eventmap)
-
+	
+	// start userscript, ask for script specific parameters and init
+	EventListener.initUserScript()
 
 }
 
@@ -115,7 +122,7 @@ void stopListener()
 
 
 
-// Main program
+// Main program code
 
 // Start the listener
 startListener()
@@ -133,7 +140,7 @@ while(  listener_running && !(spacedown() && shiftdown() ))
 {
 	TagGroupGetTagAsNumber( GetPersistentTagGroup(),"SPScript:listener running", listener_running )
 	sleep(1)
-	result("LISTENER:running\n")
+	//DEBUG result("LISTENER:running\n")
 }
 
 // stop the listener

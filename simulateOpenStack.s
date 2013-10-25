@@ -49,7 +49,7 @@ void startSimulate()
 		String fileName
 		TagGroupGetTagAsString(tg,"Name", fileName)
 		fileName = inDir + fileName
-		result("SIMULATOR: "filename+"\n")
+		result("SIMULATOR: "+filename+"\n")
 		simulateStack = OpenImage(fileName) 
 		simulateStack.SetName("SimulateStack "+i)
 		showImage(simulateStack)
