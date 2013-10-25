@@ -12,13 +12,17 @@ class userScript:object
 		name="testscript one"
 		result("SPSCRIPT: initialized\n")
 		iterations = 0
-		state=0
+		state=1
 	}
 	
 	// dialogParameters() asks for script specific parameters, gets executed before init()
 	void dialogParameters(object self) 
 	{
-		
+
+
+
+		//after parameter information is in, call init()
+		self.init()
 	}
 
 	
@@ -33,16 +37,18 @@ class userScript:object
 	// listenerDetectImageUpdate() executed by listener when image is updated. this definition is there to detect change. 
 	void listenerDetectImageUpdate(object self)
 	{
-		//increase #iterations
-		iterations++
-		result("image update detected, testscript called. iteration: "+iterations+"\n")
-		
-		result("SPSCRIPT: DETECTED CHANGE\n")
-		
-		// test to terminate after 4 iterations
-		if (iterations > 4)
-		{
-			self.terminate()
+		if (state > 0) //check if initialized
+			//increase #iterations
+			iterations++
+			result("image update detected, testscript called. iteration: "+iterations+"\n")
+			
+			result("SPSCRIPT: DETECTED CHANGE\n")
+			
+			// test to terminate after 4 iterations
+			if (iterations > 4)
+			{
+				self.terminate()
+			}
 		}
 	}
 
