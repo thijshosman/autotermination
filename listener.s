@@ -1,5 +1,8 @@
 // $BACKGROUND$
 
+
+
+
 number EventToken //the id of the listener
 number counter //a counting variable to keep track of the number of changes (events)
 
@@ -146,6 +149,103 @@ while(  listener_running && !(spacedown() && shiftdown() ))
 // stop the listener
 stopListener()
 
+class ScriptStartDialog : uiframe
+{
+	TagGroup 	PSDialog, PSDialogItems
+	Object		PSDialogWindow
+	
+	taggroup 	f1, f2	
+	object parent
+	string filename
+			
+	object init(object self)
+	{
+		result("LISTENERDIALOG: initialized\n")
+		PsDialog = DLGCreateDialog("Select Script", PSDialogItems)
+		
+		// create items and add them to dialog
+		//D1 = DLGCreateStringField("select")
+		f1 = DLGCreateStringField("test").DLGIdentifier( "stringValue" )
+		PSDialog.DLGAddElement(f1)
+		
+		//D2 = DLGCreateIntegerField(1)
+		//f2 = DLGCreateRealField(" parameter 2", D2, 2,5,5)
+		//PSDialog.DLGAddElement(f2)
+		//Number val2 = D2.DLGGetValue()
+		
+		
+		//PSDialog.DLGTableLayout(1,2,0)
+		
+		taggroup browseButtonTags = DLGCreatePushButton("browse", "OnButtonPressedBrowse")	
+		taggroup loadButtonTags = DLGCreatePushButton("load script", "OnButtonPressedLoad")		
+		taggroup startButtonTags = DLGCreatePushButton("start", "OnButtonPressedStart")
+
+		PsDialog.DLGAddElement(browseButtonTags)	
+		PsDialog.DLGAddElement(loadButtonTags)	
+		PsDialog.DLGAddElement(startButtonTags)
+
+		
+		dlgenabled(loadButtonTags,1)
+		dlgenabled(startButtonTags,1)
+		dlgenabled(browseButtonTags,1)
+		
+		
+
+		//Number bin = Dbin.DLGGetValue()
+		return self.super.init(PSDialog)
+		
+	}
+		
+	void OnButtonPressedStart(object self)
+	{
+
+		
+		self.setelementisenabled("start", 0);
+
+		
+	}
+
+		void OnButtonPressedLoad(object self)
+	{
+
+		filename = f1.DLGGetStringValue()
+		result(filename+"\n")
+		self.setelementisenabled("start", 0);
+
+		
+	}
+
+		void OnButtonPressedBrowse(object self)
+	{
+
+		filename = f1.DLGGetStringValue()
+		result(filename+"\n")
+		self.setelementisenabled("start", 0);
+		OpenDialog(filename)
+		result(filename+"\n")
+		
+	}
+
+
+
+
+	void OnButtonPressedStop(object self)
+	{
+
+
+		self.setelementisenabled("run", 1);
+		
+	}
+
+	void display(object self, string title)
+	{
+		self.super.display(title)
+	}			
+		
+}
+
+object dlg = alloc(ScriptStartDialog).init()
+		dlg.display("test")
 
 
 
