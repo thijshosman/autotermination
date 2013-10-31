@@ -67,11 +67,6 @@ class userScript:object
 		object dlg = alloc(ParameterEntryDialog).init(self)
 		dlg.display("Test Dialog")
 
-		
-
-
-		//now call init()
-		//self.init()
 	}
 
 
@@ -83,6 +78,7 @@ class userScript:object
 	{
 		TagGroupSetTagAsNumber( GetPersistentTagGroup(),"SPScript:listener running", 0 )
 		PIPS_stoprecipe()
+		PIPS_StopMilling()
 		result("SPSCRIPT: terminate sent\n")
 	}
 	

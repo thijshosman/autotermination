@@ -1,10 +1,32 @@
-// $BACKGROUND$
+
+
+// factory class tht allows generation of script objects (by dialog)
+
+class userScriptFactory : object
+{
+	//object type
+	//number type
+
+	object init(object self, number type)
+	{
+		object aScript
+		if(type == 1)
+		{
+			aScript = alloc(UserScript)
+		}
+		return aScript
+	}
 
 
 
+}
 
-number EventToken //the id of the listener
-number counter //a counting variable to keep track of the number of changes (events)
+// TESTING
+
+//object aScript1 = alloc(userScriptFactory).init(1)
+//aScript1.dialogParameters()
+
+
 
 // This is the Event Handler class which responds to the listener.
 
@@ -12,13 +34,29 @@ number counter //a counting variable to keep track of the number of changes (eve
 // these functions are supposed to be user updatetable 
 
 Class MyEventHandler
-
 {
 	// Functions responds when the data in img is changed. The event flag has a value of 4
 	// img is the image to which the event handler has been added.
 
 	// initialize the user defined script that is going to be called
+	
 	object aScript
+	number counter //a counting variable to keep track of the number of changes (events)
+	
+	void initUserScript(object self, number scriptType)
+	{
+		result("LISTENER: inituserscript\n")
+		//create userscript object 
+		//aScript = alloc(userScript)
+		
+		//create userscript with factory method
+		aScript = alloc(userScriptFactory).init(scriptType)
+
+
+		//display dialog with script specific parameters
+		aScript.dialogParameters()
+
+	}
 
 	void DataChanged(object self, number event_flag, image img)
 	{
@@ -26,7 +64,7 @@ Class MyEventHandler
 		// notify userScript
 		result("LISTENER: Change sent, counter: "+(counter+1)+"\n")
 		aScript.listenerDetectImageUpdate()
-
+		counter++
 		//{
 		//	img.ImageRemoveEventListener()
 
@@ -59,196 +97,79 @@ Class MyEventHandler
 	}
 
 
-	void initUserScript(object self)
+}
+
+// this is the listener class that attaches a listener to the images and manages the event handling
+
+class listenerController
+{
+	number EventToken //the id of the listener
+
+	// Main script function - this is wrapped in a function to help avoid memory leaks.
+
+	void start(object self, number scriptType)
 	{
-		//create userscript object 
-		aScript = alloc(userScript)
+		//TODO: make sure this function can only be called once
+
+		// Check that at least one image is displayed
+		number nodocs=countdocumentwindowsoftype(5)
+
+		if(nodocs<1)
+		{
+			showalert("Ensure a live image is displayed front-most.",2)
+			return
+		}
+
+		// Source the front-most image
+		image front:= GetFrontImage()
+
+		// Create the event listener object and attach it to the front-most image. The event map describes the mapping
+		// of the event to the reponse. The event is data_value_changed - this a predefined event in the DM scripting language
+		// DataChanged is the method in the EventHandler Class which is called when the event is detected.
+		// EventToken is a numerical id used to identity the listener. It is used to remove the event listener.
+
+		object EventListener=alloc(MyEventHandler)
+		string eventmap="data_value_changed:DataChanged"
 		
-		//display dialog with script specific parameters
-		aScript.dialogParameters()
+		EventToken = front.ImageAddEventListener(EventListener, eventmap)
+		
+		// start userscript, ask for script specific parameters and init
+		EventListener.initUserScript(scriptType)
 
-		//init script (ie set parameters to zero)
-		//aScript.init()
 	}
 
-
-}
-
-
-
-	
-	
-
-
-
-// Main script function - this is wrapped in a function to help avoid memory leaks.
-
-void startListener()
-{
-	//TODO: make sure this function can only be installed once
-	
-
-
-	// Check that at least one image is displayed
-	number nodocs=countdocumentwindowsoftype(5)
-
-	if(nodocs<1)
+	void stop(object self)
 	{
-		showalert("Ensure a live image is displayed front-most.",2)
-		return
+		image front := GetFrontImage()
+		front.ImageRemoveEventListener(EventToken)
+		result("LISTENER:stopped\n")
 	}
 
-	// Source the front-most image
-	image front:= GetFrontImage()
-
-	// Create the event listener object and attach it to the front-most image. The event map describes the mapping
-	// of the event to the reponse. The event is data_value_changed - this a predefined event in the DM scripting language
-	// DataChanged is the method in the EventHandler Class which is called when the event is detected.
-	// EventToken is a numerical id used to identity the listener. It is used to remove the event listener.
-
-	object EventListener=alloc(MyEventHandler)
-	string eventmap="data_value_changed:DataChanged"
-	
-	EventToken = front.ImageAddEventListener(EventListener, eventmap)
-	
-	// start userscript, ask for script specific parameters and init
-	EventListener.initUserScript()
-
 }
-
-void stopListener()
-{
-	image front := GetFrontImage()
-	front.ImageRemoveEventListener(EventToken)
-	result("LISTENER:stopped\n")
-}
-
-
 
 // Main program code
 
 // Start the listener
-startListener()
+
+//object aListener = alloc(listener)
+
+//aListener.start(1)
 
 
-number listener_running = 1
+//number listener_running = 1
 
 // set the Tag
-TagGroupSetTagAsNumber( GetPersistentTagGroup(), "SPScript:listener running", listener_running )
+//TagGroupSetTagAsNumber( GetPersistentTagGroup(), "SPScript:listener running", listener_running )
 // get the Tag
-TagGroupGetTagAsNumber( GetPersistentTagGroup(), "SPScript:listener running", listener_running )
+//TagGroupGetTagAsNumber( GetPersistentTagGroup(), "SPScript:listener running", listener_running )
 
 // check that listener still needs to running
-while(  listener_running && !(spacedown() && shiftdown() ))
-{
-	TagGroupGetTagAsNumber( GetPersistentTagGroup(),"SPScript:listener running", listener_running )
-	sleep(1)
+//while(  listener_running && !(spacedown() && shiftdown() ))
+//{
+//	TagGroupGetTagAsNumber( GetPersistentTagGroup(),"SPScript:listener running", listener_running )
+//	sleep(1)
 	//DEBUG result("LISTENER:running\n")
-}
+//}
 
 // stop the listener
-stopListener()
-
-class ScriptStartDialog : uiframe
-{
-	TagGroup 	PSDialog, PSDialogItems
-	Object		PSDialogWindow
-	
-	taggroup 	f1, f2	
-	object parent
-	string filename
-			
-	object init(object self)
-	{
-		result("LISTENERDIALOG: initialized\n")
-		PsDialog = DLGCreateDialog("Select Script", PSDialogItems)
-		
-		// create items and add them to dialog
-		//D1 = DLGCreateStringField("select")
-		f1 = DLGCreateStringField("test").DLGIdentifier( "stringValue" )
-		PSDialog.DLGAddElement(f1)
-		
-		//D2 = DLGCreateIntegerField(1)
-		//f2 = DLGCreateRealField(" parameter 2", D2, 2,5,5)
-		//PSDialog.DLGAddElement(f2)
-		//Number val2 = D2.DLGGetValue()
-		
-		
-		//PSDialog.DLGTableLayout(1,2,0)
-		
-		taggroup browseButtonTags = DLGCreatePushButton("browse", "OnButtonPressedBrowse")	
-		taggroup loadButtonTags = DLGCreatePushButton("load script", "OnButtonPressedLoad")		
-		taggroup startButtonTags = DLGCreatePushButton("start", "OnButtonPressedStart")
-
-		PsDialog.DLGAddElement(browseButtonTags)	
-		PsDialog.DLGAddElement(loadButtonTags)	
-		PsDialog.DLGAddElement(startButtonTags)
-
-		
-		dlgenabled(loadButtonTags,1)
-		dlgenabled(startButtonTags,1)
-		dlgenabled(browseButtonTags,1)
-		
-		
-
-		//Number bin = Dbin.DLGGetValue()
-		return self.super.init(PSDialog)
-		
-	}
-		
-	void OnButtonPressedStart(object self)
-	{
-
-		
-		self.setelementisenabled("start", 0);
-
-		
-	}
-
-		void OnButtonPressedLoad(object self)
-	{
-
-		filename = f1.DLGGetStringValue()
-		result(filename+"\n")
-		self.setelementisenabled("start", 0);
-
-		
-	}
-
-		void OnButtonPressedBrowse(object self)
-	{
-
-		filename = f1.DLGGetStringValue()
-		result(filename+"\n")
-		self.setelementisenabled("start", 0);
-		OpenDialog(filename)
-		result(filename+"\n")
-		
-	}
-
-
-
-
-	void OnButtonPressedStop(object self)
-	{
-
-
-		self.setelementisenabled("run", 1);
-		
-	}
-
-	void display(object self, string title)
-	{
-		self.super.display(title)
-	}			
-		
-}
-
-object dlg = alloc(ScriptStartDialog).init()
-		dlg.display("test")
-
-
-
-
-
-
+//aListener.stop()

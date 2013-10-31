@@ -1,129 +1,142 @@
-// simple dialog script to demonstrate the resetting of pulldown menus
-// D. R. G. Mitchell, drm678ansto.gov.au (replace the 678 with the 'at' symbol)
-// ANSTO Materials, Feb 2006
-// verions 1.0
+// $BACKGROUND$
+//dialog that allows users to start scripts
 
-//ssxcg
-// variables666
-
-number returnno
-string returnname, returnstring
-taggroup intfield1
-
-class DialogLibraryTestClass : uiframe
+class ScriptStartDialog : uiframe
 {
-	number change_count, action_count;
-
-	void tracknamechange( object self, TagGroup tg)
+	TagGroup 	PSDialog, PSDialogItems
+	Object		PSDialogWindow
+	
+	taggroup 	f1, f2	
+	object parent
+	string filename
+	object aListenerController
+	object aSentinel
+			
+	object init(object self)
 	{
-			returnno=val(dlggetstringvalue(tg))
-			dlggetnthlabel(tg, returnno, returnname)
-			dlgvalue(intfield1,dlggetvalue(tg))
-	}
-
-	void cancelpane( object self) // when the 'Cancel' button is pressed
-	{
-		//windowclose(getdocumentwindow(0),0)
-	}
-
-
-
-
-// This part of the script does the resetting, when the reset button is pressed
-
-	void reset(object self) // when the 'Reset' button is pressed
-	{
-
-		taggroup Getthepulldown=self.lookupelement("MyPullDown")
 		
-		// open window to view tag content
-		//taggroupopenbrowserwindow(GetthePulldown,0)
+		result("LISTENERDIALOG: initialized\n")
+		PsDialog = DLGCreateDialog("Select Script", PSDialogItems)
+		
+		// create items and add them to dialog
+		//D1 = DLGCreateStringField("select")
+		//f1 = DLGCreateStringField("test").DLGIdentifier( "stringValue" )
+		//PSDialog.DLGAddElement(f1)
+		
+		//D2 = DLGCreateIntegerField(1)
+		//f2 = DLGCreateRealField(" parameter 2", D2, 2,5,5)
+		//PSDialog.DLGAddElement(f2)
+		//Number val2 = D2.DLGGetValue()
+		
 
-		TagGroupSetTagAsNumber( GetthePulldown, "Value", 1 ) 
+		TagGroup pulldown_items;
+		TagGroup pulldown = DLGCreatechoice(pulldown_items, 1, "tracknamechange")
 
-		intfield1.dlgvalue(1)
+		// Edit these lines to change your user list
+
+		pulldown_items.DLGAddPopupItemEntry("Default Choice");
+		pulldown_items.DLGAddPopupItemEntry("Choice 2");
+		pulldown_items.DLGAddPopupItemEntry("Choice 3");
+		pulldown_items.DLGAddPopupItemEntry("Choice 4");
+		pulldown_items.DLGAddPopupItemEntry("Choice 5");
+		pulldown_items.DLGAddPopupItemEntry("Choice 6");
+		pulldown_items.DLGAddPopupItemEntry("Choice 7");
+		pulldown.DLGIdentifier("MyPullDown")
+		
+		
+		//PSDialog.DLGTableLayout(1,2,0)
+		
+		taggroup scriptlistitems = NewTagGroup()
+		number index
+		index = scriptlistitems.TagGroupCreateNewLabeledTag( "ROI" ) 
+		scriptlistitems.TagGroupSetIndexedTagAsLong( index, 1 ) 
+		//scriptlistitems.TagGroupCreateGroupTagAfter()
+		
+		//scriptlistitems.TagGroupOpenBrowserWindow( 0 ) 
+		//taggGroup items = NewTagList() 
+		//items(1) = 
+		
+		
+		
+		
+		//taggroup browseButtonTags = DLGCreatePushButton("browse", "OnButtonPressedBrowse")	
+		taggroup stopButtonTags = DLGCreatePushButton("stop", "OnButtonPressedStop")		
+		taggroup startButtonTags = DLGCreatePushButton("start", "OnButtonPressedStart")
+		//taggroup scriptlist = DLGCreateChoice(pulldown)
+		PsDialog.DLGAddElement(pulldown)
+
+
+		//PsDialog.DLGAddElement(browseButtonTags)	
+		PsDialog.DLGAddElement(startButtonTags)	
+		PsDialog.DLGAddElement(stopButtonTags)
+
+		
+		//dlgenabled(loadButtonTags,1)
+		dlgenabled(startButtonTags,1)
+		dlgenabled(stopButtonTags,1)
+		
+		aListenerController = alloc(listenerController)
+		
+
+		//Number bin = Dbin.DLGGetValue()
+		return self.super.init(PSDialog)
+		
 	}
+		
+	void OnButtonPressedStart(object self)
+	{
+		
+		// start listener
+		aListenerController.start(1)
+		
+		// start sentinel
+		aSentinel = alloc(ListenerSentinel)
+		aSentinel.init(aListenerController).StartThread()
+		
+		//self.setelementisenabled("start", 0);
+		result("WELCOME: started listenerController\n")
+
+		
+	}
+
+	void OnButtonPressedStop(object self)
+	{
+		
+		//stop sentinel, and this stops the listener
+		aSentinel.stop()
+		
+		//filename = f1.DLGGetStringValue()
+		//result(filename+"\n")
+		//self.setelementisenabled("start", 0);
+
+		result("WELCOME: stopped listenerController\n")
+	}
+
+//		void OnButtonPressedBrowse(object self)
+//	{
+//
+//		filename = f1.DLGGetStringValue()
+//		result(filename+"\n")
+//		self.setelementisenabled("start", 0);
+//		OpenDialog(filename)
+//		result(filename+"\n")
+//		
+//	}
+
+
+
+	void display(object self, string title)
+	{
+		self.super.display(title)
+	}			
+		
 }
 
-
-TagGroup MakeFields() // makes the integer field
-{
-	taggroup label1=dlgcreatelabel("Pulldown Value").dlganchor("Center")
-	intfield1 = DLGCreateIntegerField(0,10).DLGAnchor("Center");
-	intfield1.dlgvalue(1)
-	taggroup group1=dlggroupitems(label1,intfield1)
-	return group1	
-}
-
-
-TagGroup Makepulldowns() // creates the pulldown menu
-{
-	TagGroup pulldown_items;
-	TagGroup pulldown = DLGCreatePopup(pulldown_items, 1, "tracknamechange")
-
-	// Edit these lines to change your user list
-
-	pulldown_items.DLGAddPopupItemEntry("Default Choice");
-	pulldown_items.DLGAddPopupItemEntry("Choice 2");
-	pulldown_items.DLGAddPopupItemEntry("Choice 3");
-	pulldown_items.DLGAddPopupItemEntry("Choice 4");
-	pulldown_items.DLGAddPopupItemEntry("Choice 5");
-	pulldown_items.DLGAddPopupItemEntry("Choice 6");
-	pulldown_items.DLGAddPopupItemEntry("Choice 7");
+object dlg = alloc(ScriptStartDialog).init()
+		dlg.display("test")
 
 
 
-
-// The command below labels the taggroup for the pulldown menu with a string - 'MyPullDown'. This is used in the Reset function
-// to source the taggroup, without having to use a global variable for the tag group
-
-	pulldown.DLGIdentifier("MyPullDown")
-	
-
-
-
-	taggroup label2=dlgcreatelabel("Choose Here").dlganchor("Centre")
-	taggroup pulldowngroup=dlggroupitems(label2, pulldown)
-
-	return pulldowngroup
-}
-
-// This creates the reset and cancel buttons in the dialog
-
-TagGroup MakeButtons()
-{
-	taggroup pushbuttons
-	TagGroup CalculateButton = DLGCreatePushButton("Reset", "Reset").DLGSide("Bottom");
-	calculatebutton.dlgexternalpadding(10,10)
-	TagGroup CancelButton = DLGCreatePushButton(" Cancel ", "cancelpane").DLGSide("Bottom");
-	cancelbutton.dlgexternalpadding(10,10)
-	pushbuttons=dlggroupitems(calculatebutton, cancelbutton)
-	pushbuttons.dlgtablelayout(2,1,0)
-
-	return pushbuttons
-}
-
-
-// function to create the dialog
-
-void createdialog()
-{
-	TagGroup dialog_items;	
-	TagGroup dialog = DLGCreateDialog("Enter Specimen Number and User Name", dialog_items);
-	
-	dialog_items.DLGAddElement(makepulldowns() );
-	dialog_items.DLGAddElement( MakeFields() );
-	dialog_items.dlgaddelement(MakeButtons() );
-	dialog.DLGTableLayout(2,2, 0);
-
-	object dialog_frame = alloc(DialogLibraryTestClass).init(dialog)
-	dialog_frame.display("Set and Reset Pulldowns")
-
-}
-
-
-// Main Program
-createdialog()
 
 
 
