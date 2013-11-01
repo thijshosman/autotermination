@@ -11,12 +11,18 @@ class ScriptStartDialog : uiframe
 	string filename
 	object aListenerController
 	object aSentinel
+	number scriptnumber
+	number simulator
+	object aSimulator
 			
 	object init(object self)
 	{
 		
 		result("LISTENERDIALOG: initialized\n")
 		PsDialog = DLGCreateDialog("Select Script", PSDialogItems)
+		
+		f1 = DLGCreatelabel("Please select a script and press Start to start image listener.\nPress stop to stop listening")
+		PSDialog.DLGAddElement(f1)
 		
 		// create items and add them to dialog
 		//D1 = DLGCreateStringField("select")
@@ -34,22 +40,31 @@ class ScriptStartDialog : uiframe
 
 		// Edit these lines to change your user list
 
-		pulldown_items.DLGAddPopupItemEntry("Default Choice");
-		pulldown_items.DLGAddPopupItemEntry("Choice 2");
-		pulldown_items.DLGAddPopupItemEntry("Choice 3");
-		pulldown_items.DLGAddPopupItemEntry("Choice 4");
-		pulldown_items.DLGAddPopupItemEntry("Choice 5");
-		pulldown_items.DLGAddPopupItemEntry("Choice 6");
-		pulldown_items.DLGAddPopupItemEntry("Choice 7");
+		pulldown_items.DLGAddPopupItemEntry("Testcase 0");
+		pulldown_items.DLGAddPopupItemEntry("Region of Interest Intensity Change");
+		//pulldown_items.DLGAddPopupItemEntry("Choice 2");
+		//pulldown_items.DLGAddPopupItemEntry("Choice 3");
+
 		pulldown.DLGIdentifier("MyPullDown")
+		
+		
+		// create checkbox to allow for simulator to start
+		TagGroup simulatorcheckbox = DLGCreateCheckBox("Start Simulator", 0, "toggleSimulator" )
+		simulatorcheckbox.DLGIdentifier("checkbox")
+		
+
+		
+		
+		
+		
 		
 		
 		//PSDialog.DLGTableLayout(1,2,0)
 		
-		taggroup scriptlistitems = NewTagGroup()
-		number index
-		index = scriptlistitems.TagGroupCreateNewLabeledTag( "ROI" ) 
-		scriptlistitems.TagGroupSetIndexedTagAsLong( index, 1 ) 
+		//taggroup scriptlistitems = NewTagGroup()
+		//number index
+		//index = scriptlistitems.TagGroupCreateNewLabeledTag( "ROI" ) 
+		//scriptlistitems.TagGroupSetIndexedTagAsLong( index, 1 ) 
 		//scriptlistitems.TagGroupCreateGroupTagAfter()
 		
 		//scriptlistitems.TagGroupOpenBrowserWindow( 0 ) 
@@ -64,6 +79,13 @@ class ScriptStartDialog : uiframe
 		taggroup startButtonTags = DLGCreatePushButton("start", "OnButtonPressedStart")
 		//taggroup scriptlist = DLGCreateChoice(pulldown)
 		PsDialog.DLGAddElement(pulldown)
+		PsDialog.DLGAddElement(simulatorcheckbox)
+		
+
+		// set the default to the testcase
+		TagGroupSetTagAsNumber( pulldown, "Value", 0 ) 
+		// set the default to no simulator
+		simulator = 0
 
 
 		//PsDialog.DLGAddElement(browseButtonTags)	
@@ -82,12 +104,39 @@ class ScriptStartDialog : uiframe
 		return self.super.init(PSDialog)
 		
 	}
-		
+	
+	void tracknamechange( object self, TagGroup tg)
+	{
+			scriptnumber=val(dlggetstringvalue(tg))
+
+			//dlggetnthlabel(tg, returnno, returnname)
+			//dlgvalue(intfield1,dlggetvalue(tg))
+	}
+
+	void toggleSimulator( object self, TagGroup tg)
+	{
+			simulator = tg.DLGGetValue()
+			
+			result(simulator+"\n")
+			//dlggetnthlabel(tg, returnno, returnname)
+			//dlgvalue(intfield1,dlggetvalue(tg))
+	}
+
 	void OnButtonPressedStart(object self)
 	{
+		// start simulator if needed (ie checkbox checked)
+		if (simulator == 1)
+		{
+			aSimulator = alloc(simulateStack)
+			aSimulator.init(1).startthread()
+			
+		}
+		
+		// wait for image to load
+		sleep(7)
 		
 		// start listener
-		aListenerController.start(1)
+		aListenerController.start(scriptnumber, simulator)
 		
 		// start sentinel
 		aSentinel = alloc(ListenerSentinel)
@@ -105,6 +154,11 @@ class ScriptStartDialog : uiframe
 		//stop sentinel, and this stops the listener
 		aSentinel.stop()
 		
+		if (simulator == 1)
+		{
+			aSimulator.stop()
+		}
+
 		//filename = f1.DLGGetStringValue()
 		//result(filename+"\n")
 		//self.setelementisenabled("start", 0);
@@ -133,7 +187,7 @@ class ScriptStartDialog : uiframe
 }
 
 object dlg = alloc(ScriptStartDialog).init()
-		dlg.display("test")
+		dlg.display("Specimen Preparation Autotermination")
 
 
 

@@ -1,4 +1,145 @@
 
+//sentinel that has to check whether listener is still running and needs to stop
+class listenerSentinel : thread
+{
+	number listener_running
+	object aListenerController
+
+	object init(object self, object listenerController)
+	{
+		listener_running = 1
+
+		// set the Tag
+		TagGroupSetTagAsNumber( GetPersistentTagGroup(), "SPScript:listener running", listener_running )
+		// get the Tag
+		TagGroupGetTagAsNumber( GetPersistentTagGroup(), "SPScript:listener running", listener_running )
+		aListenerController = listenerController
+		return self
+	}
+
+	void RunThread(object self)
+	{	
+		// check that listener still needs to running
+		while(  listener_running && !(spacedown() && shiftdown() ))
+		{
+			TagGroupGetTagAsNumber( GetPersistentTagGroup(),"SPScript:listener running", listener_running )
+			sleep(1)
+			//DEBUG 
+			result("SENTINEL:running\n")
+		}
+
+		// stop the listener
+		aListenerController.stop()
+	}
+
+	void stop(object self)
+	{
+		TagGroupSetTagAsNumber( GetPersistentTagGroup(), "SPScript:listener running", 0 )
+	}
+
+}
+
+
+
+
+//alloc(listenerSentinel).init().StartThread()
+
+
+
+
+// simulator
+
+class simulateStack : thread
+{
+	number running
+
+	object init( object self, number value )   
+
+	{     
+
+		running = 1   
+
+		return self   
+
+	}  
+
+	
+
+	void runThread(object self)
+	{
+	// get directory
+
+		// allow us to stop the thread
+		//TagGroupGetTagAsNumber( GetPersistentTagGroup(), "SPScript:listener running", running )
+		
+		
+		String defDir = GetApplicationDirectory("current", 0)
+		//String defDir = ""
+		String inDir
+		
+
+		if (!GetDirectoryDialog("Select Directory of Image Stack", defDir, inDir)) 
+			exit(0)
+		
+		//inDir = "C:\Users\thosman\Documents\PIPS 2\sample data\cu perforation stack\Part 3\" //"
+		
+		result(indir+"\n")
+
+		TagGroup imageList = NewTagList()
+		Number flags = 3
+		imageList = GetFilesInDirectory(inDir, flags)
+
+		Number nFiles = TagGroupCountTags(imageList)
+		result("SIMULATOR: number of images"+nFiles+"\n")
+
+		if (nFiles == 0)
+		{
+			OkDialog("No Files Found in directory \n"+inDir)
+			exit(0)
+		}	
+		
+		
+		
+		// open first image 
+		//	image simulateStack := openImage()
+		Image simulateStack 
+		//= GetFrontImage()
+		//simulateStack.showImage()
+		
+		
+		
+		// show each image		
+		number i
+		for (i=0; i<nFiles; i++)
+		{
+			TagGroup tg
+			imageList.TagGroupGetIndexedTagAsTagGroup(i, tg)
+			String fileName
+			TagGroupGetTagAsString(tg,"Name", fileName)
+			fileName = inDir + fileName
+			result("SIMULATOR: "+filename+"\n")
+			simulateStack = OpenImage(fileName) 
+			simulateStack.SetName("SimulateStack "+i)
+			showImage(simulateStack)
+			sleep(5)
+
+			if ((optiondown() && shiftdown()) || running ==0)
+			{
+				result("SIMULATOR: aborted\n")
+				break
+			}
+			
+		}
+
+	}
+	void stop(object self)
+	{
+		running = 0
+	}
+}
+
+
+
 
 // factory class tht allows generation of script objects (by dialog)
 
@@ -10,10 +151,17 @@ class userScriptFactory : object
 	object init(object self, number type)
 	{
 		object aScript
+		if(type == 0)
+		{
+			aScript = alloc(TestScript1)
+		}
 		if(type == 1)
 		{
 			aScript = alloc(UserScript)
-		}
+		} 
+
+
+
 		return aScript
 	}
 
@@ -42,8 +190,10 @@ Class MyEventHandler
 	
 	object aScript
 	number counter //a counting variable to keep track of the number of changes (events)
-	
-	void initUserScript(object self, number scriptType)
+	number record_buffer_size
+	number simulation
+
+	void initUserScript(object self, number scriptType, number s)
 	{
 		result("LISTENER: inituserscript\n")
 		//create userscript object 
@@ -52,6 +202,7 @@ Class MyEventHandler
 		//create userscript with factory method
 		aScript = alloc(userScriptFactory).init(scriptType)
 
+		simulation = s
 
 		//display dialog with script specific parameters
 		aScript.dialogParameters()
@@ -61,30 +212,32 @@ Class MyEventHandler
 	void DataChanged(object self, number event_flag, image img)
 	{
 		
-		// notify userScript
-		result("LISTENER: Change sent, counter: "+(counter+1)+"\n")
-		aScript.listenerDetectImageUpdate()
-		counter++
-		//{
-		//	img.ImageRemoveEventListener()
 
-		//}
-
-		// Each time the image is changed, the counter is incremented. After four changes, the listener is removed
+		// notify userScript, but only once independent of size of buffer
+		if (simulation != 1)
+		{
+			TagGroupGetTagAsNumber( GetPersistentTagGroup(), "PIPS:Record:Buffer size", record_buffer_size )
+		} else {
+			record_buffer_size = 1
+		}
+		//DEBUG
+		//record_buffer_size = 2
 		
+		result("LISTENER: Change, counter: "+(counter+1)+"\n")
+		
+		if (!(counter%record_buffer_size))
+		{
+			result("LISTENER: Change sent, counter: "+(counter+1)+"\n")
+			aScript.listenerDetectImageUpdate()
+		}
+		counter++
 
-		// DEBUG, stop listener after 3 changes
-		//if(counter>3)
-		//{
-		//	img.ImageRemoveEventListener(EventToken)
-		//	result("LISTENER: Four changes have been detected - the Listener has been removed.\n")
-		//}
 	}
 
  
 	// This is the constructor it is invoked when the Listener object is created. In this case
 	// it does nothing except report itself in the Results window.
-	MyEventHandler( object self)
+	MyEventHandler(object self)
 	{
 		Result("LISTENER: Event Handler Constructor called. Listener attached to image.\n")
 	}
@@ -107,7 +260,7 @@ class listenerController
 
 	// Main script function - this is wrapped in a function to help avoid memory leaks.
 
-	void start(object self, number scriptType)
+	void start(object self, number scriptType, number simulation)
 	{
 		//TODO: make sure this function can only be called once
 
@@ -134,7 +287,7 @@ class listenerController
 		EventToken = front.ImageAddEventListener(EventListener, eventmap)
 		
 		// start userscript, ask for script specific parameters and init
-		EventListener.initUserScript(scriptType)
+		EventListener.initUserScript(scriptType, simulation)
 
 	}
 
@@ -147,7 +300,7 @@ class listenerController
 
 }
 
-// Main program code
+// Main program code // testcode
 
 // Start the listener
 
@@ -173,3 +326,6 @@ class listenerController
 
 // stop the listener
 //aListener.stop()
+
+//object sim = alloc(simulateStack).startthread()
+

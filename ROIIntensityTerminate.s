@@ -19,6 +19,7 @@ class userScript:object
 	void userScript(object self)
 	{
 		name="ROI intensity termination script"
+		state = 0
 	}
 
 	// init gets executed when script is started
@@ -65,7 +66,7 @@ class userScript:object
 		
 		// dialog object created, this object will call init when parameters are set
 		object dlg = alloc(ParameterEntryDialog).init(self)
-		dlg.display("Test Dialog")
+		dlg.display("Region of Interest Autotermination")
 
 	}
 
@@ -185,17 +186,17 @@ class ParameterEntryDialog : uiframe
 		taggroup resumeButtonTags = DLGCreatePushButton("Resume", "OnButtonPressedResume")
 		taggroup stopButtonTags = DLGCreatePushButton("Manual Stop", "OnButtonPressedStop")
 		PsDialog.DLGAddElement(runButtonTags)
-		PsDialog.DLGAddElement(pauseButtonTags)
-		PsDialog.DLGAddElement(resumeButtonTags)
-		PsDialog.DLGAddElement(stopButtonTags)
+		//PsDialog.DLGAddElement(pauseButtonTags)
+		//PsDialog.DLGAddElement(resumeButtonTags)
+		//PsDialog.DLGAddElement(stopButtonTags)
 		dlgenabled(runButtonTags,1)
-		dlgenabled(pauseButtonTags,0)
-		dlgenabled(resumeButtonTags,0)
-		dlgenabled(stopButtonTags,0)
+		//dlgenabled(pauseButtonTags,0)
+		//dlgenabled(resumeButtonTags,0)
+		//dlgenabled(stopButtonTags,0)
 		dlgidentifier(runButtonTags, "run")
-		dlgidentifier(pauseButtonTags, "pause")
-		dlgidentifier(resumeButtonTags, "resume")
-		dlgidentifier(stopButtonTags, "stop")
+		//dlgidentifier(pauseButtonTags, "pause")
+		//dlgidentifier(resumeButtonTags, "resume")
+		//dlgidentifier(stopButtonTags, "stop")
 		
 		
 
@@ -209,10 +210,10 @@ class ParameterEntryDialog : uiframe
 
 		val1 = D1.DLGGetValue()
 		parent.init(val1)
-		self.setelementisenabled("run", 0);
-		self.setelementisenabled("pause", 1);
-		self.setelementisenabled("resume", 1);
-		self.setelementisenabled("stop", 1);
+		//self.setelementisenabled("run", 0);
+		//self.setelementisenabled("pause", 1);
+		//self.setelementisenabled("resume", 1);
+		//self.setelementisenabled("stop", 1);
 		
 	}
 
@@ -234,7 +235,7 @@ class ParameterEntryDialog : uiframe
 	{
 
 		parent.terminate()
-		self.setelementisenabled("run", 1);
+		//self.setelementisenabled("run", 1);
 		
 	}
 
