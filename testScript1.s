@@ -1,13 +1,5 @@
 
 
-//object test1 = alloc(userScript)
-//test1.init()
-//test1.SPSCRIPT_init()
-
-//sleep(10)
-
-
-
 class testscript1:object
 {
 	string name 
@@ -19,6 +11,7 @@ class testscript1:object
 	void userScript(object self)
 	{
 		name="testscript"
+		state = 0
 	}
 
 	// init gets executed when script is started
@@ -82,7 +75,7 @@ class testscript1:object
 }
 
 
-//object test1 = alloc(userScript)
+//object test1 = alloc(testscript1)
 //test1.dialogParameters()
 
 
@@ -90,15 +83,6 @@ class testscript1:object
 //test1.SPSCRIPT_init()
 
 //sleep(10)
-
-
-
-
-
-
-
-
-
 
 
 class Testscript1_ParameterEntryDialog : uiframe

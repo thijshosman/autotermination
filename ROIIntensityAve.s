@@ -1,9 +1,10 @@
 
-class userScript:object
+class ROIIntensityAve:object
 {
 	string name 
 	number iterations
 	number state
+	string feedback
 
 	number chg
 	image trg_grey
@@ -15,17 +16,26 @@ class userScript:object
 	number x,y,z
 	number t,l,b,r
 
-	
-	void userScript(object self)
+
+	void setStatus(object self)
 	{
-		name="ROI intensity termination script"
-		state = 0
+		OpenAndSetProgressWindow(name,feedback,"Iteration: "+iterations)
 	}
+	
+	void ROIIntensityAve(object self)
+	{
+		name="ROIIntensityAve"
+		feedback="paused"
+		state = 0
+		self.setStatus()
+	}
+
+
 
 	// init gets executed when script is started
 	void init(object self, number value)
 	{
-		openandsetprogresswindow("Hi there1","test","")
+		
 		chg = value
 
 		src:=GetFrontImage()
@@ -47,40 +57,53 @@ class userScript:object
 		high_thres = startavg * (1+chg/100)
 
 		result("------- Terminate Milling from Image Intensity Change ------------------\n")
-		result("SPSCRIPT"+datestamp()+": Starting ROI average intensity="+StartAvg+"\n")
-		result("SPSCRIPT  Milling will be stopped when intensity changes by "+chg+"%\n")
-		result("SPSCRIPT      Low  threshold="+low_thres+"\n")
-		result("SPSCRIPT      High threshold="+high_thres+"\n")
-		result("SPSCRIPT"+name+": initialized\n")
+		result(datestamp()+": Starting ROI average intensity="+StartAvg+"\n")
+		result("Milling will be stopped when intensity changes by "+chg+"%\n")
+		result("Low threshold="+low_thres+"\n")
+		result("High threshold="+high_thres+"\n")
+		result(name+": initialized\n")
 		iterations = 0
 		state=1
+
+		feedback = "initialized"
+		self.setStatus()
 	}
 	
 	// dialogParameters() asks for script specific parameters, gets executed before init() and calls init
 	void dialogParameters(object self) 
 	{
-		result("SPSCRIPT: dialog started\n")
-		//get user input for intensity change
-		//chg = 20
-		//getnumber("Specify % intensity change to stop milling and draw ROI with selection tool:",chg,chg)
+		debug("SPSCRIPT: dialog started\n")
 		
 		// dialog object created, this object will call init when parameters are set
-		object dlg = alloc(ParameterEntryDialog).init(self)
+		object dlg = alloc(ROIIntensityAveParameterEntryDialog).init(self)
 		dlg.display("Region of Interest Autotermination")
 
 	}
 
-
+	void stopRunning(object self) 
+	{
+		feedback = "script stopped"
+		self.setStatus()
+		state = 0
+		debug("SPSCRIPT: stopped\n")
+		
+	}
 
 	
 	
 	// terminations, do not edit, when called, it stops the listener
 	void terminate(object self)
 	{
-		TagGroupSetTagAsNumber( GetPersistentTagGroup(),"SPScript:listener running", 0 )
+		// stop this script from listening
+		self.stopRunning()
+		
+		// stop PIPS, whether recipe or milling
 		PIPS_stoprecipe()
 		PIPS_StopMilling()
-		result("SPSCRIPT: terminate sent\n")
+		feedback = "terminated, script stopped"
+		self.setStatus()
+
+		debug("SPSCRIPT: terminate sent\n")
 	}
 	
 	// listenerDetectImageUpdate() executed by listener when image is updated. this definition is there to detect change. 
@@ -90,50 +113,41 @@ class userScript:object
 			{
 			//increase #iterations
 			iterations++
-			result("image update detected, testscript called. iteration: "+iterations+"\n")
+			//result("image update detected, testscript called. iteration: "+iterations+"\n")
 			
-			result("SPSCRIPT: DETECTED CHANGE\n")
+			debug("SPSCRIPT: DETECTED CHANGE\n")
 			
 			trg=src[0,0,0,x,y,1]
 			trg_grey:=red(trg)*.3+green(trg)*.6+blue(trg)*.1
 			number avg=average(trg_grey[t,l,b,r])
 			result(datestamp()+":Current ROI average intensity="+avg+"\n")
 		
+			feedback = "running"
+			self.setStatus()
+
+
 			if (avg > high_thres || avg < low_thres)
 			{
-				result("  Milling stopped because intensity change exceeded threshold.\n\n")
-				//PIPS_StopMilling()
+				result("  Milling stopped because intensity change exceeded threshold.\n")
+				
 				self.terminate()
+				result("terminated milling\nstart average: "+StartAvg+"\nlast average: "+avg+"\n\n")
 				Beep(); Beep();
 				exit(0)
 			}
 
+			
 		}
 
 
-
-
-
 	}
 
 
-
-	void pause(object self)
-	{
-		PIPS_PauseRecipe()
-		result("SPSCRIPT: script paused\n")
-	}
-	
-	void resume(object self)
-	{
-		PIPS_ResumeRecipe()
-		result("SPSCRIPT: script resumed\n")
-	}
 
 }
 
 
-//object test1 = alloc(userScript)
+//object test1 = alloc(ROIIntensityAve)
 //test1.dialogParameters()
 
 
@@ -152,7 +166,8 @@ class userScript:object
 
 
 
-class ParameterEntryDialog : uiframe
+
+class ROIIntensityAveParameterEntryDialog : uiframe
 {
 	TagGroup 	PSDialog, PSDialogItems
 	Object		PSDialogWindow
@@ -160,60 +175,77 @@ class ParameterEntryDialog : uiframe
 	taggroup 	f1, f2	
 	object parent
 	number val1
-			
-	object init(object self, object aParent)
+	
+	void makeButtons(object self)
 	{
-		result("PARAMETERENTRYDIALOG: initialized\n")
-		PsDialog = DLGCreateDialog("Enter parameters", PSDialogItems)
-		
 		// create items and add them to dialog
 		D1 = DLGCreateIntegerField(1)
 		f1 = DLGCreateIntegerField("Specify % intensity change to stop milling and draw ROI with selection tool:", D1, 1,5)
 		PSDialog.DLGAddElement(f1)
-		
 		
 		//D2 = DLGCreateIntegerField(1)
 		//f2 = DLGCreateRealField(" parameter 2", D2, 2,5,5)
 		//PSDialog.DLGAddElement(f2)
 		//Number val2 = D2.DLGGetValue()
 		
-		parent = aParent
-		
 		//PSDialog.DLGTableLayout(1,2,0)
 		
 		taggroup runButtonTags = DLGCreatePushButton("Run", "OnButtonPressedRun")
+		PsDialog.DLGAddElement(runButtonTags)
+		dlgidentifier(runButtonTags, "run")
+		dlgenabled(runButtonTags,1)
+
+		taggroup stopButtonTags = DLGCreatePushButton("Stop", "OnButtonPressedStop")
+		PsDialog.DLGAddElement(stopButtonTags)
+		dlgidentifier(stopButtonTags, "stop")
+		dlgenabled(stopButtonTags,0)
+
 		taggroup pauseButtonTags = DLGCreatePushButton("Pause", "OnButtonPressedPause")
 		taggroup resumeButtonTags = DLGCreatePushButton("Resume", "OnButtonPressedResume")
-		taggroup stopButtonTags = DLGCreatePushButton("Manual Stop", "OnButtonPressedStop")
-		PsDialog.DLGAddElement(runButtonTags)
+		
+
+		
+
+
+
 		//PsDialog.DLGAddElement(pauseButtonTags)
 		//PsDialog.DLGAddElement(resumeButtonTags)
-		//PsDialog.DLGAddElement(stopButtonTags)
-		dlgenabled(runButtonTags,1)
+		
 		//dlgenabled(pauseButtonTags,0)
 		//dlgenabled(resumeButtonTags,0)
-		//dlgenabled(stopButtonTags,0)
-		dlgidentifier(runButtonTags, "run")
+		
 		//dlgidentifier(pauseButtonTags, "pause")
 		//dlgidentifier(resumeButtonTags, "resume")
-		//dlgidentifier(stopButtonTags, "stop")
 		
 		
 
 		//Number bin = Dbin.DLGGetValue()
-		return self.super.init(PSDialog)
+		
 		
 	}
+
+	object init(object self, object aParent)
+	{
+		debug("PARAMETERENTRYDIALOG: initialized\n")
+		PsDialog = DLGCreateDialog("Enter parameters", PSDialogItems)
 		
+		parent = aParent
+		self.makeButtons()
+
+		return self.super.init(PSDialog)
+	}
+	
+
+
 	void OnButtonPressedRun(object self)
 	{
 
 		val1 = D1.DLGGetValue()
 		parent.init(val1)
-		//self.setelementisenabled("run", 0);
+		self.setelementisenabled("run", 0);
 		//self.setelementisenabled("pause", 1);
 		//self.setelementisenabled("resume", 1);
-		//self.setelementisenabled("stop", 1);
+		self.setelementisenabled("stop", 1);
 		
 	}
 
@@ -234,8 +266,9 @@ class ParameterEntryDialog : uiframe
 	void OnButtonPressedStop(object self)
 	{
 
-		parent.terminate()
-		//self.setelementisenabled("run", 1);
+		parent.stopRunning()
+		self.setelementisenabled("run", 1);
+		self.setelementisenabled("stop", 0);
 		
 	}
 
@@ -245,8 +278,5 @@ class ParameterEntryDialog : uiframe
 	}			
 		
 }
-
-
-
 
 

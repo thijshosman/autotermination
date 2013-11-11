@@ -1,53 +1,232 @@
 
-//sentinel that has to check whether listener is still running and needs to stop
-class listenerSentinel : thread
+
+
+class userScript:object
 {
-	number listener_running
-	object aListenerController
+	string name 
+	number iterations
+	number state
+	string feedback
+	object dlg
 
-	object init(object self, object listenerController)
+	void setStatus(object self)
 	{
-		listener_running = 1
-
-		// set the Tag
-		TagGroupSetTagAsNumber( GetPersistentTagGroup(), "SPScript:listener running", listener_running )
-		// get the Tag
-		TagGroupGetTagAsNumber( GetPersistentTagGroup(), "SPScript:listener running", listener_running )
-		aListenerController = listenerController
-		return self
+		OpenAndSetProgressWindow(name,feedback,"Iteration: "+iterations)
+	}
+	
+	void userScript(object self)
+	{
+		name="testscript"
+		feedback="paused"
+		state = 0
+		self.setStatus()
 	}
 
-	void RunThread(object self)
-	{	
-		// check that listener still needs to running
-		while(  listener_running && !(spacedown() && shiftdown() ))
+
+
+	// init gets executed when script is started
+	void init(object self, number value)
+	{
+		feedback = "initialized"
+		self.setStatus()
+
+		result("SPSCRIPT"+datestamp()+": Starting\n")
+		state = 1
+	}
+	
+	// dialogParameters() asks for script specific parameters, gets executed before init() and calls init
+	void dialogParameters(object self) 
+	{
+		result("SPSCRIPT: dialog started\n")
+		
+		// dialog object created, this object will call init when parameters are set
+		dlg = alloc(scriptParameterEntryDialog).init(self)
+		dlg.display("Testcase")
+
+	}
+
+	void stopRunning(object self) 
+	{
+		feedback = "script stopped"
+		self.setStatus()
+		state = 0
+		result("SPSCRIPT: stopped\n")
+		
+	}
+
+	
+	
+	// terminations, do not edit, when called, it stops the listener
+	void terminate(object self)
+	{
+		// stop this script from listening
+		self.stopRunning()
+		
+		// stop PIPS, whether recipe or milling
+		PIPS_stoprecipe()
+		PIPS_StopMilling()
+		feedback = "terminated milling, script stopped"
+		self.setStatus()
+
+		result("SPSCRIPT: terminate sent\n")
+	}
+	
+	// listenerDetectImageUpdate() executed by listener when image is updated. this definition is there to detect change. 
+	void listenerDetectImageUpdate(object self)
+	{
+		if (state > 0) //check if initialized
 		{
-			TagGroupGetTagAsNumber( GetPersistentTagGroup(),"SPScript:listener running", listener_running )
-			sleep(1)
-			//DEBUG 
-			result("SENTINEL:running\n")
+			iterations++
+			feedback = "running"
+			self.setStatus()
+			result ("SPSCRIPT: I am called by listener\n")
+
 		}
 
-		// stop the listener
-		aListenerController.stop()
 	}
 
-	void stop(object self)
+
+
+	void pause(object self)
 	{
-		TagGroupSetTagAsNumber( GetPersistentTagGroup(), "SPScript:listener running", 0 )
+		PIPS_PauseRecipe()
+		result("SPSCRIPT: script paused\n")
+	}
+	
+	void resume(object self)
+	{
+		PIPS_ResumeRecipe()
+		result("SPSCRIPT: script resumed\n")
 	}
 
 }
 
 
+//object test1 = alloc(testscript1)
+//test1.dialogParameters()
 
 
-//alloc(listenerSentinel).init().StartThread()
+//test1.init()
+//test1.SPSCRIPT_init()
+
+//sleep(10)
+
+
+class scriptParameterEntryDialog : uiframe
+{
+	TagGroup 	PSDialog, PSDialogItems
+	Object		PSDialogWindow
+	taggroup	D1, D2
+	taggroup 	f1, f2	
+	object parent
+	number val1
+	
+	void makeButtons(object self)
+	{
+		// create items and add them to dialog
+		D1 = DLGCreateIntegerField(1)
+		f1 = DLGCreateIntegerField("testscript, nothing to specify", D1, 1,5)
+		PSDialog.DLGAddElement(f1)
+		
+		//D2 = DLGCreateIntegerField(1)
+		//f2 = DLGCreateRealField(" parameter 2", D2, 2,5,5)
+		//PSDialog.DLGAddElement(f2)
+		//Number val2 = D2.DLGGetValue()
+		
+		//PSDialog.DLGTableLayout(1,2,0)
+		
+		taggroup runButtonTags = DLGCreatePushButton("Run", "OnButtonPressedRun")
+		PsDialog.DLGAddElement(runButtonTags)
+		dlgidentifier(runButtonTags, "run")
+		dlgenabled(runButtonTags,1)
+
+		taggroup stopButtonTags = DLGCreatePushButton("Stop", "OnButtonPressedStop")
+		PsDialog.DLGAddElement(stopButtonTags)
+		dlgidentifier(stopButtonTags, "stop")
+		dlgenabled(stopButtonTags,0)
+
+		taggroup pauseButtonTags = DLGCreatePushButton("Pause", "OnButtonPressedPause")
+		taggroup resumeButtonTags = DLGCreatePushButton("Resume", "OnButtonPressedResume")
+		
+
+		
 
 
 
+		//PsDialog.DLGAddElement(pauseButtonTags)
+		//PsDialog.DLGAddElement(resumeButtonTags)
+		
+		//dlgenabled(pauseButtonTags,0)
+		//dlgenabled(resumeButtonTags,0)
+		
+		//dlgidentifier(pauseButtonTags, "pause")
+		//dlgidentifier(resumeButtonTags, "resume")
+		
+		
 
-// simulator
+		//Number bin = Dbin.DLGGetValue()
+		
+		
+	}
+
+	object init(object self, object aParent)
+	{
+		result("PARAMETERENTRYDIALOG: initialized\n")
+		PsDialog = DLGCreateDialog("Enter parameters", PSDialogItems)
+		
+		parent = aParent
+		self.makeButtons()
+
+		return self.super.init(PSDialog)
+	}
+	
+
+
+	void OnButtonPressedRun(object self)
+	{
+
+		val1 = D1.DLGGetValue()
+		parent.init(val1)
+		self.setelementisenabled("run", 0);
+		//self.setelementisenabled("pause", 1);
+		//self.setelementisenabled("resume", 1);
+		self.setelementisenabled("stop", 1);
+		
+	}
+
+	void OnButtonPressedPause(object self)
+	{
+
+		parent.pause()
+		
+	}
+
+	void OnButtonPressedResume(object self)
+	{
+
+		parent.resume()
+		
+	}
+	
+	void OnButtonPressedStop(object self)
+	{
+
+		parent.stopRunning()
+		self.setelementisenabled("run", 1);
+		self.setelementisenabled("stop", 0);
+		
+	}
+
+	void display(object self, string title)
+	{
+		self.super.display(title)
+	}			
+		
+}
+
+// following classes are support classes for the listener framework
+
+// simulator, not used for modeless dialog
 
 class simulateStack : thread
 {
@@ -151,15 +330,26 @@ class userScriptFactory : object
 	object init(object self, number type)
 	{
 		object aScript
-		if(type == 0)
-		{
-			aScript = alloc(TestScript1)
-		}
-		if(type == 1)
+		if(type == 4)
 		{
 			aScript = alloc(UserScript)
+		}
+		if(type == 0)
+		{
+			aScript = alloc(ROIIntensityAve)
 		} 
-
+		if(type == 1)
+		{
+			aScript = alloc(ROIIntensityPixels)
+		}
+		if(type == 2)
+		{
+			aScript = alloc(PlanarFringe)
+		}
+		if(type == 3)
+		{
+			aScript = alloc(glueline)
+		}		
 
 
 		return aScript
@@ -188,47 +378,35 @@ Class MyEventHandler
 
 	// initialize the user defined script that is going to be called
 	
-	object aScript
+	object Script
 	number counter //a counting variable to keep track of the number of changes (events)
 	number record_buffer_size
-	number simulation
+	//number simulation
 
-	void initUserScript(object self, number scriptType, number s)
+	void initUserScript(object self, object aScript, number s)
 	{
-		result("LISTENER: inituserscript\n")
-		//create userscript object 
-		//aScript = alloc(userScript)
-		
-		//create userscript with factory method
-		aScript = alloc(userScriptFactory).init(scriptType)
-
-		simulation = s
+		result("Image listener started\n")
 
 		//display dialog with script specific parameters
-		aScript.dialogParameters()
+		Script = aScript
+		Script.dialogParameters()
 
 	}
 
 	void DataChanged(object self, number event_flag, image img)
 	{
 		
-
 		// notify userScript, but only once independent of size of buffer
-		if (simulation != 1)
-		{
-			TagGroupGetTagAsNumber( GetPersistentTagGroup(), "PIPS:Record:Buffer size", record_buffer_size )
-		} else {
-			record_buffer_size = 1
-		}
-		//DEBUG
-		//record_buffer_size = 2
+		// for now, we just set it to 1 in the welcome window
 		
-		result("LISTENER: Change, counter: "+(counter+1)+"\n")
+		TagGroupGetTagAsNumber( GetPersistentTagGroup(), "PIPS:Record:Buffer size", record_buffer_size )
+		
+		// debug("LISTENER: Change, counter: "+(counter+1)+"\n")
 		
 		if (!(counter%record_buffer_size))
 		{
-			result("LISTENER: Change sent, counter: "+(counter+1)+"\n")
-			aScript.listenerDetectImageUpdate()
+			// debug("LISTENER: Change sent, counter: "+(counter+1)+"\n")
+			Script.listenerDetectImageUpdate()
 		}
 		counter++
 
@@ -239,14 +417,14 @@ Class MyEventHandler
 	// it does nothing except report itself in the Results window.
 	MyEventHandler(object self)
 	{
-		Result("LISTENER: Event Handler Constructor called. Listener attached to image.\n")
+		debug("Listener attached to image.\n")
 	}
 
 	// The destructor responds the image has been closed.
 	~MyEventHandler(object self)
 	{
 		
-		result("LISTENER: Event Handler Destructor called. Image Closed.\n")
+		debug("Listener removed. Image Closed.\n")
 	}
 
 
@@ -260,9 +438,13 @@ class listenerController
 
 	// Main script function - this is wrapped in a function to help avoid memory leaks.
 
-	void start(object self, number scriptType, number simulation)
+	void start(object self, object aScript, number simulation)
 	{
-		//TODO: make sure this function can only be called once
+
+		// kill previous eventtokens so that we are sure there is only 1 listener running at the same time
+
+		// get the Tag
+		TagGroupGetTagAsNumber( GetPersistentTagGroup(), "SPScript:listener id", EventToken )
 
 		// Check that at least one image is displayed
 		number nodocs=countdocumentwindowsoftype(5)
@@ -275,6 +457,14 @@ class listenerController
 
 		// Source the front-most image
 		image front:= GetFrontImage()
+		try {
+			front.ImageRemoveEventListener(EventToken)
+		} 
+		catch {
+			break
+		}
+		
+
 
 		// Create the event listener object and attach it to the front-most image. The event map describes the mapping
 		// of the event to the reponse. The event is data_value_changed - this a predefined event in the DM scripting language
@@ -285,9 +475,13 @@ class listenerController
 		string eventmap="data_value_changed:DataChanged"
 		
 		EventToken = front.ImageAddEventListener(EventListener, eventmap)
+
+
+		// set the Tag so that the ID can be killed the next time the script runs
+		TagGroupSetTagAsNumber( GetPersistentTagGroup(), "SPScript:listener id", EventToken )
 		
-		// start userscript, ask for script specific parameters and init
-		EventListener.initUserScript(scriptType, simulation)
+		// start userscript, ask for script specific parameters through its own dialog and init
+		EventListener.initUserScript(aScript, simulation)
 
 	}
 
@@ -295,7 +489,7 @@ class listenerController
 	{
 		image front := GetFrontImage()
 		front.ImageRemoveEventListener(EventToken)
-		result("LISTENER:stopped\n")
+		debug("Image listener stopped\n")
 	}
 
 }
@@ -307,25 +501,4 @@ class listenerController
 //object aListener = alloc(listener)
 
 //aListener.start(1)
-
-
-//number listener_running = 1
-
-// set the Tag
-//TagGroupSetTagAsNumber( GetPersistentTagGroup(), "SPScript:listener running", listener_running )
-// get the Tag
-//TagGroupGetTagAsNumber( GetPersistentTagGroup(), "SPScript:listener running", listener_running )
-
-// check that listener still needs to running
-//while(  listener_running && !(spacedown() && shiftdown() ))
-//{
-//	TagGroupGetTagAsNumber( GetPersistentTagGroup(),"SPScript:listener running", listener_running )
-//	sleep(1)
-	//DEBUG result("LISTENER:running\n")
-//}
-
-// stop the listener
-//aListener.stop()
-
-//object sim = alloc(simulateStack).startthread()
 

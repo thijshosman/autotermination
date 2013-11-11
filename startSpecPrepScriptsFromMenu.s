@@ -19,7 +19,7 @@ class ScriptStartDialog : uiframe
 	object init(object self)
 	{
 		
-		result("LISTENERDIALOG: initialized\n")
+		//result("LISTENERDIALOG: initialized\n")
 		PsDialog = DLGCreateDialog("Select Script", PSDialogItems)
 		
 		f1 = DLGCreatelabel("Please select a script and press Start to start image listener.\nPress stop to stop listening")
@@ -41,11 +41,11 @@ class ScriptStartDialog : uiframe
 
 		// Edit these lines to change your user list
 
-		pulldown_items.DLGAddPopupItemEntry("Testcase 0");
-		pulldown_items.DLGAddPopupItemEntry("Region of Interest Intensity % Change");
-		pulldown_items.DLGAddPopupItemEntry("Region of Interest # Maximum Intensity Pixels");
-		pulldown_items.DLGAddPopupItemEntry("Count Fringes Planar");
-		pulldown_items.DLGAddPopupItemEntry("Glue line/cross section");
+		pulldown_items.DLGAddPopupItemEntry("Region of Interest Intensity % Change", 1);
+		pulldown_items.DLGAddPopupItemEntry("Region of Interest # Maximum Intensity Pixels", 1);
+		pulldown_items.DLGAddPopupItemEntry("Count Fringes Planar", 1);
+		pulldown_items.DLGAddPopupItemEntry("Glue line/cross section", 1);
+		pulldown_items.DLGAddPopupItemEntry("Testcase 0", 1);
 
 		pulldown.DLGIdentifier("MyPullDown")
 		
@@ -81,7 +81,7 @@ class ScriptStartDialog : uiframe
 		taggroup startButtonTags = DLGCreatePushButton("start", "OnButtonPressedStart")
 		//taggroup scriptlist = DLGCreateChoice(pulldown)
 		PsDialog.DLGAddElement(pulldown)
-		PsDialog.DLGAddElement(simulatorcheckbox)
+		//PsDialog.DLGAddElement(simulatorcheckbox)
 		
 
 		// set the default to the testcase
@@ -91,15 +91,14 @@ class ScriptStartDialog : uiframe
 
 
 		//PsDialog.DLGAddElement(browseButtonTags)	
-		PsDialog.DLGAddElement(startButtonTags)	
-		PsDialog.DLGAddElement(stopButtonTags)
+		//PsDialog.DLGAddElement(startButtonTags)	
+		//PsDialog.DLGAddElement(stopButtonTags)
 
 		
 		//dlgenabled(loadButtonTags,1)
-		dlgenabled(startButtonTags,1)
-		dlgenabled(stopButtonTags,1)
-		
-		aListenerController = alloc(listenerController)
+		//dlgenabled(startButtonTags,1)
+		//dlgenabled(stopButtonTags,1)
+
 		
 
 		//Number bin = Dbin.DLGGetValue()
@@ -124,13 +123,14 @@ class ScriptStartDialog : uiframe
 			//dlgvalue(intfield1,dlggetvalue(tg))
 	}
 
-	void OnButtonPressedStart(object self)
+	void OnButtonPressedStart(object self) //not used anymore in modeless dialog
 	{
 		
 		// set progress window
-		OpenAndSetProgressWindow("listener started","","")
+		//OpenAndSetProgressWindow("listener started","","")
 		
 		// start simulator if needed (ie checkbox checked)
+		// not used in modeless dialog
 		if (simulator == 1)
 		{
 			aSimulator = alloc(simulateStack)
@@ -138,16 +138,17 @@ class ScriptStartDialog : uiframe
 		}
 		
 		// wait for image to load
-		sleep(7)
+		//sleep(7)
 		
 		// craete script of desired type
-		aScript = alloc(userScriptFactory).init(scriptSelected)
+		// aScript = alloc(userScriptFactory).init(scriptSelected)
 		// start listener
-		aListenerController.start(aScript, simulator)
+		//aListenerController.start(aScript, simulator)
 		
 		// start sentinel
-		aSentinel = alloc(ListenerSentinel)
-		aSentinel.init(aListenerController).StartThread()
+		// not used in modeless dialog
+		//aSentinel = alloc(ListenerSentinel)
+		//aSentinel.init(aListenerController).StartThread()
 		
 		//self.setelementisenabled("start", 0);
 		result("WELCOME: started listenerController\n")
@@ -159,10 +160,10 @@ class ScriptStartDialog : uiframe
 	{
 		
 		// set progress window
-		OpenAndSetProgressWindow("listener stopped","","")
+		//OpenAndSetProgressWindow("listener stopped","","")
 		
 		//stop sentinel, and this stops the listener
-		aSentinel.stop()
+		//aSentinel.stop()
 		
 		if (simulator == 1)
 		{
@@ -175,6 +176,12 @@ class ScriptStartDialog : uiframe
 
 		result("WELCOME: stopped listenerController\n")
 	}
+
+	number getScriptSelected(object self)
+	{
+		return scriptSelected
+	}
+
 
 //		void OnButtonPressedBrowse(object self)
 //	{
@@ -196,11 +203,33 @@ class ScriptStartDialog : uiframe
 		
 }
 
-object dlg = alloc(ScriptStartDialog).init()
-		dlg.display("Specimen Preparation Autotermination")
+void main()
+{
+	// start script
+	object dlg = alloc(ScriptStartDialog).init()
+	//dlg.display("Specimen Preparation Autotermination")
+	if (dlg.pose()) // if 
+	{
+		debug("WELCOME: started listenerController\n")
 
+		object aListenercontroller
+		object aScript
+		
+		// load script (with script specific dialog)
+		aScript = alloc(userScriptFactory).init(dlg.getScriptSelected())
+		debug("WELCOME: script selected: "+dlg.getScriptSelected()+"\n")
 
+		// start listener
+		aListenerController = alloc(listenerController)
+		aListenerController.start(aScript, 0)
+		
+		// make sure the buffer size is one, otherwise there will be a lot of change events sent
+		TagGroupSetTagAsNumber( GetPersistentTagGroup(), "PIPS:Record:Buffer size", 1 )
 
+	} else {
+		//result("canceled\n")
+	}
+}
 
-
-
+//function, to avoid memory leaks
+main()
