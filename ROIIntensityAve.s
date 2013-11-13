@@ -24,7 +24,7 @@ class ROIIntensityAve:object
 	
 	void ROIIntensityAve(object self)
 	{
-		name="ROIIntensityAve"
+		name="Average Intensity"
 		feedback="paused"
 		state = 0
 		self.setStatus()
@@ -57,11 +57,11 @@ class ROIIntensityAve:object
 		high_thres = startavg * (1+chg/100)
 
 		result("------- Terminate Milling from Image Intensity Change ------------------\n")
-		result(datestamp()+": Starting ROI average intensity="+StartAvg+"\n")
-		result("Milling will be stopped when intensity changes by "+chg+"%\n")
-		result("Low threshold="+low_thres+"\n")
-		result("High threshold="+high_thres+"\n")
-		result(name+": initialized\n")
+		result("  "+datestamp()+": Starting ROI average intensity="+StartAvg+"\n")
+		result("  Milling will be stopped when intensity changes by "+chg+"%\n")
+		result("  Low threshold="+low_thres+"\n")
+		result("  High threshold="+high_thres+"\n")
+		//result(name+": initialized\n")
 		iterations = 0
 		state=1
 
@@ -72,7 +72,7 @@ class ROIIntensityAve:object
 	// dialogParameters() asks for script specific parameters, gets executed before init() and calls init
 	void dialogParameters(object self) 
 	{
-		debug("SPSCRIPT: dialog started\n")
+		//debug("SPSCRIPT: dialog started\n")
 		
 		// dialog object created, this object will call init when parameters are set
 		object dlg = alloc(ROIIntensityAveParameterEntryDialog).init(self)
@@ -82,10 +82,11 @@ class ROIIntensityAve:object
 
 	void stopRunning(object self) 
 	{
-		feedback = "script stopped"
+		result("------- Script stopped at "+datestamp()+" --------\n")
+		feedback = "Script stopped"
 		self.setStatus()
 		state = 0
-		debug("SPSCRIPT: stopped\n")
+		//debug("SPSCRIPT: stopped\n")
 		
 	}
 
@@ -100,10 +101,10 @@ class ROIIntensityAve:object
 		// stop PIPS, whether recipe or milling
 		PIPS_stoprecipe()
 		PIPS_StopMilling()
-		feedback = "terminated, script stopped"
+		feedback = "Terminated"
 		self.setStatus()
 
-		debug("SPSCRIPT: terminate sent\n")
+		//debug("SPSCRIPT: terminate sent\n")
 	}
 	
 	// listenerDetectImageUpdate() executed by listener when image is updated. this definition is there to detect change. 
@@ -115,14 +116,14 @@ class ROIIntensityAve:object
 			iterations++
 			//result("image update detected, testscript called. iteration: "+iterations+"\n")
 			
-			debug("SPSCRIPT: DETECTED CHANGE\n")
+			//debug("SPSCRIPT: DETECTED CHANGE\n")
 			
 			trg=src[0,0,0,x,y,1]
 			trg_grey:=red(trg)*.3+green(trg)*.6+blue(trg)*.1
 			number avg=average(trg_grey[t,l,b,r])
-			result(datestamp()+":Current ROI average intensity="+avg+"\n")
+			//result("  "+datestamp()+":Current ROI average intensity="+avg+"\n")
 		
-			feedback = "running"
+			feedback = "Avg: "+avg
 			self.setStatus()
 
 
@@ -131,7 +132,7 @@ class ROIIntensityAve:object
 				result("  Milling stopped because intensity change exceeded threshold.\n")
 				
 				self.terminate()
-				result("terminated milling\nstart average: "+StartAvg+"\nlast average: "+avg+"\n\n")
+				result("  Terminated milling\n  start average: "+StartAvg+"\n  last average: "+avg+"\n\n")
 				Beep(); Beep();
 				exit(0)
 			}
@@ -226,12 +227,11 @@ class ROIIntensityAveParameterEntryDialog : uiframe
 
 	object init(object self, object aParent)
 	{
-		debug("PARAMETERENTRYDIALOG: initialized\n")
-		PsDialog = DLGCreateDialog("Enter parameters", PSDialogItems)
+		//debug("PARAMETERENTRYDIALOG: initialized\n")
 		
+		PsDialog = DLGCreateDialog("Enter parameters", PSDialogItems)
 		parent = aParent
 		self.makeButtons()
-
 		return self.super.init(PSDialog)
 	}
 	

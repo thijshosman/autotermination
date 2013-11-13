@@ -171,7 +171,7 @@ class scriptParameterEntryDialog : uiframe
 
 	object init(object self, object aParent)
 	{
-		result("PARAMETERENTRYDIALOG: initialized\n")
+		//result("PARAMETERENTRYDIALOG: initialized\n")
 		PsDialog = DLGCreateDialog("Enter parameters", PSDialogItems)
 		
 		parent = aParent
@@ -385,7 +385,7 @@ Class MyEventHandler
 
 	void initUserScript(object self, object aScript, number s)
 	{
-		result("Image listener started\n")
+		//result("Image listener started\n")
 
 		//display dialog with script specific parameters
 		Script = aScript
@@ -417,14 +417,14 @@ Class MyEventHandler
 	// it does nothing except report itself in the Results window.
 	MyEventHandler(object self)
 	{
-		debug("Listener attached to image.\n")
+		//debug("Listener attached to image.\n")
 	}
 
 	// The destructor responds the image has been closed.
 	~MyEventHandler(object self)
 	{
 		
-		debug("Listener removed. Image Closed.\n")
+		//debug("Listener removed. Image Closed.\n")
 	}
 
 
@@ -489,7 +489,7 @@ class listenerController
 	{
 		image front := GetFrontImage()
 		front.ImageRemoveEventListener(EventToken)
-		debug("Image listener stopped\n")
+		//debug("Image listener stopped\n")
 	}
 
 }

@@ -22,7 +22,7 @@ class ScriptStartDialog : uiframe
 		//result("LISTENERDIALOG: initialized\n")
 		PsDialog = DLGCreateDialog("Select Script", PSDialogItems)
 		
-		f1 = DLGCreatelabel("Please select a script and press Start to start image listener.\nPress stop to stop listening")
+		f1 = DLGCreatelabel("Please select image window and a script and press Start")
 		PSDialog.DLGAddElement(f1)
 		
 		// create items and add them to dialog
@@ -41,11 +41,11 @@ class ScriptStartDialog : uiframe
 
 		// Edit these lines to change your user list
 
-		pulldown_items.DLGAddPopupItemEntry("Region of Interest Intensity % Change", 1);
-		pulldown_items.DLGAddPopupItemEntry("Region of Interest # Maximum Intensity Pixels", 1);
-		pulldown_items.DLGAddPopupItemEntry("Count Fringes Planar", 1);
-		pulldown_items.DLGAddPopupItemEntry("Glue line/cross section", 1);
-		pulldown_items.DLGAddPopupItemEntry("Testcase 0", 1);
+		pulldown_items.DLGAddPopupItemEntry("Detect Average Intensity Change in Region of Interest", 1);
+		pulldown_items.DLGAddPopupItemEntry("Detect Dark or Bright Areas in Region of Interest", 1);
+		//pulldown_items.DLGAddPopupItemEntry("Count Fringes Planar", 1);
+		//pulldown_items.DLGAddPopupItemEntry("Glue line/cross section", 1);
+		//pulldown_items.DLGAddPopupItemEntry("Testcase 0", 1);
 
 		pulldown.DLGIdentifier("MyPullDown")
 		
@@ -151,7 +151,7 @@ class ScriptStartDialog : uiframe
 		//aSentinel.init(aListenerController).StartThread()
 		
 		//self.setelementisenabled("start", 0);
-		result("WELCOME: started listenerController\n")
+		//result("WELCOME: started listenerController\n")
 
 		
 	}
@@ -174,7 +174,7 @@ class ScriptStartDialog : uiframe
 		//result(filename+"\n")
 		//self.setelementisenabled("start", 0);
 
-		result("WELCOME: stopped listenerController\n")
+		//result("WELCOME: stopped listenerController\n")
 	}
 
 	number getScriptSelected(object self)
@@ -207,17 +207,17 @@ void main()
 {
 	// start script
 	object dlg = alloc(ScriptStartDialog).init()
-	//dlg.display("Specimen Preparation Autotermination")
+	//dlg.display("SpecPrep Autotermination")
 	if (dlg.pose()) // if 
 	{
-		debug("WELCOME: started listenerController\n")
+		//debug("WELCOME: started listenerController\n")
 
 		object aListenercontroller
 		object aScript
 		
 		// load script (with script specific dialog)
 		aScript = alloc(userScriptFactory).init(dlg.getScriptSelected())
-		debug("WELCOME: script selected: "+dlg.getScriptSelected()+"\n")
+		//debug("WELCOME: script selected: "+dlg.getScriptSelected()+"\n")
 
 		// start listener
 		aListenerController = alloc(listenerController)

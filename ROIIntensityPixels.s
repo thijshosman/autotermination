@@ -5,7 +5,8 @@ class ROIIntensityPixels:object
 	number state
 	string feedback
 
-	number threshold
+	number threshold_pixels
+	number threshold_um2
 	image trg_grey
 	image src
 	number StartAvg
@@ -17,6 +18,7 @@ class ROIIntensityPixels:object
 	number dark_intensity_threshold
 	number light_intensity_threshold
 	number lightOrDark
+	number pixel_calibration
 
 	void setStatus(object self)
 	{
@@ -25,10 +27,11 @@ class ROIIntensityPixels:object
 	
 	void ROIIntensityPixels(object self)
 	{
-		name="ROIIntensityPixels"
+		name="Detect Dark/Bright Area"
 		feedback="paused"
 		state = 0
 		self.setStatus()
+		
 	}
 
 
@@ -37,14 +40,16 @@ class ROIIntensityPixels:object
 	void init(object self, number size, number condition)
 	{
 		string typeofhole
-		dark_intensity_threshold = 10
-		light_intensity_threshold = 245
+		dark_intensity_threshold = 15
+		light_intensity_threshold = 240
 		lightordark = condition
-
-		debug("size: "+size+" lightordark: "+lightordark+"\n")
+		pixel_calibration = 0.1225
 		
+		//debug("size: "+size+" lightordark: "+lightordark+"\n")
+
 		// calculate number of pixels the desired hole threshold is
-		threshold = size/0.1225 
+		threshold_pixels = size/pixel_calibration 
+		threshold_um2 = size
 
 		src:=GetFrontImage()
 		
@@ -68,10 +73,9 @@ class ROIIntensityPixels:object
 		}		
 		
 
-		result("------- Detect Hole ------------------\n")
-		result(datestamp()+"\n")
-		result("Milling will be stopped when "+typeofhole+" hole with area of "+threshold+" um^2 is detected\n")
-		result(name+": initialized\n")
+		result("------- Script Started at "+datestamp()+" --------\n")
+		result("  Milling will be stopped when "+typeofhole+" area of "+threshold_um2+" um^2 is detected\n")
+		//result("  "+name+": initialized\n")
 		
 		iterations=0
 		state=1
@@ -83,7 +87,7 @@ class ROIIntensityPixels:object
 	// dialogParameters() asks for script specific parameters, gets executed before init() and calls init
 	void dialogParameters(object self) 
 	{
-		debug("SPSCRIPT: dialog started\n")
+		//debug("SPSCRIPT: dialog started\n")
 		
 		// dialog object created, this object will call init when parameters are set
 		object dlg = alloc(ROIIntensityPixelsParameterEntryDialog).init(self)
@@ -93,10 +97,11 @@ class ROIIntensityPixels:object
 
 	void stopRunning(object self) 
 	{
-		feedback = "script stopped"
+		result("------- Script stopped at "+datestamp()+" --------\n")
+		feedback = "Script stopped"
 		self.setStatus()
 		state = 0
-		debug("SPSCRIPT: stopped\n")
+		//debug("SPSCRIPT: stopped\n")
 		
 	}
 
@@ -111,10 +116,10 @@ class ROIIntensityPixels:object
 		// stop PIPS, whether recipe or milling
 		PIPS_stoprecipe()
 		PIPS_StopMilling()
-		feedback = "terminated, script stopped"
+		feedback = "Terminated"
 		self.setStatus()
 
-		debug("SPSCRIPT: terminate sent\n")
+		//debug("SPSCRIPT: terminate sent\n")
 	}
 	
 	// listenerDetectImageUpdate() executed by listener when image is updated. this definition is there to detect change. 
@@ -122,7 +127,7 @@ class ROIIntensityPixels:object
 	{
 		if (state > 0) //check if initialized
 			{
-			number current_hole_size
+			number current_hole_size_pixels
 
 			//increase #iterations
 			iterations++
@@ -132,29 +137,31 @@ class ROIIntensityPixels:object
 			trg=src[0,0,0,x,y,1]
 			trg_grey:=red(trg)*.3+green(trg)*.6+blue(trg)*.1
 		
-			feedback = "running"
-			self.setStatus()
+
 
 			if (lightOrDark == 1) // dark hole
 			{
-				current_hole_size = 0.1225 * sum(trg_grey[t,l,b,r] < dark_intensity_threshold)
+				current_hole_size_pixels =  sum(trg_grey[t,l,b,r] < dark_intensity_threshold)
 				
 			}
 
 			if (lightOrDark == 0) // bright hole
 			{
-				current_hole_size = 0.1225 * sum(trg_grey[t,l,b,r] > light_intensity_threshold)
+				current_hole_size_pixels =  sum(trg_grey[t,l,b,r] > light_intensity_threshold)
 				
 			}
 
-			result(datestamp()+" size of hole detected in ROI: "+current_hole_size+"\n")
+			//result("  "+datestamp()+" size of hole detected in ROI: "+current_hole_size+"\n")
+			feedback = "Hole size: "+current_hole_size_pixels * pixel_calibration +" um^2"
+			self.setStatus()
 
-			if (current_hole_size > threshold)
+
+			if (current_hole_size_pixels > threshold_pixels)
 			{
 				result("  Milling stopped because the detected hole exceeds threshold\n")
 				
 				self.terminate()
-				result("terminated milling at "+datestamp()+"\nHole size: "+current_hole_size+"\n\n")
+				result("  Terminated milling at "+datestamp()+"\n  Hole size: "+current_hole_size_pixels * pixel_calibration+" um^2\n\n")
 				Beep(); Beep();
 				exit(0)
 			}
@@ -194,14 +201,14 @@ class ROIIntensityPixelsParameterEntryDialog : uiframe
 
 		// create items and add them to dialog
 		D1 = DLGCreateIntegerField(1)
-		f1 = DLGCreateIntegerField("Specify the minimum termination hole area in um^2 ", D1, 1,5)
+		f1 = DLGCreateIntegerField("Specify the minimum termination area in um^2 ", D1, 1,5)
 		PSDialog.DLGAddElement(f1)
 		
 		// radio button for light/dark
 		
 		radio1 = DLGCreateRadioList(radioItems1, 1, "lightOrDarkSelection")
-		radioItems1.DLGAddRadioItem("Look for Bright Hole", 0 )
-		radioItems1.DLGAddRadioItem("Look for Dark Hole", 1 )
+		radioItems1.DLGAddRadioItem("Look for Bright Area", 0 )
+		radioItems1.DLGAddRadioItem("Look for Dark Area", 1 )
 		radio1.DLGIdentifier("radio1")
 		PSDialog.DLGAddElement(radio1)
 		lightOrDark = 1
@@ -252,7 +259,7 @@ class ROIIntensityPixelsParameterEntryDialog : uiframe
 
 	object init(object self, object aParent)
 	{
-		debug("PARAMETERENTRYDIALOG: initialized\n")
+		//debug("PARAMETERENTRYDIALOG: initialized\n")
 		PsDialog = DLGCreateDialog("Enter parameters", PSDialogItems)
 		
 		parent = aParent
