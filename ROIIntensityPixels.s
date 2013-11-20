@@ -1,3 +1,5 @@
+SPScriptSet("roiintensitypixels", "Detect Dark or Bright Areas in Region of Interest")
+
 class ROIIntensityPixels:object
 {
 	string name 

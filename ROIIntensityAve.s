@@ -1,3 +1,5 @@
+// install the script in the global tags
+SPScriptSet("roiintensityave", "Detect Average Intensity Change in Region of Interest")
 
 class ROIIntensityAve:object
 {

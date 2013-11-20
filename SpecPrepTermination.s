@@ -1,5 +1,48 @@
 
+// allow users to install new script
 
+void SPScriptSet(string classname, string label)
+{
+	// register new script
+	TagGroupSetTagAsstring( GetPersistentTagGroup(), "SPScript:scripts:"+classname, label )
+}
+
+taggroup SPScriptGetInstalledScripts()
+{
+	// get key -> value pairs of current registered scripts
+	// classname -> labelname/description
+	TagGroup tg = GetPersistentTagGroup() 
+	TagGroup subtag
+	tg.TagGroupGetTagAsTagGroup( "SPScript:scripts", subtag )
+	
+	//tg2.TagGroupOpenBrowserWindow( 0 ) 
+	//number count = subtag.TagGroupCountTags( ) 
+	//result(count+"\n")
+	//number i
+	//for( i = 0; i < count; ++i )
+		//{
+		//	result(subtag.TagGroupGetTagLabel( i )+"\n")
+		//}	
+	
+	return subtag
+}
+
+string SPScriptGetLabel(string classname)
+{
+	// get label for a current classname
+	TagGroup tg = GetPersistentTagGroup() 
+	TagGroup subtag
+	tg.TagGroupGetTagAsTagGroup( "SPScript:scripts", subtag )
+	
+	string value
+	subtag.TagGroupGetTagAsString( classname, value )
+
+	//debug(label  + " = " + value + "\n" )
+	return value
+
+}
+
+// the test script
 
 class userScript:object
 {
@@ -324,6 +367,23 @@ class simulateStack : thread
 
 class userScriptFactory : object
 {
+	object init(object self, string classnameToBeInstantiated)
+	{
+		object aScript
+
+		// I know, blame DMscript, not me..
+		aScript = alloc(""+classnameToBeInstantiated)
+
+		return aScript
+	}
+	
+
+}
+
+
+
+/*class userScriptFactory : object
+{
 	//object type
 	//number type
 
@@ -357,7 +417,7 @@ class userScriptFactory : object
 
 
 
-}
+}*/
 
 // TESTING
 
