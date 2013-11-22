@@ -68,7 +68,7 @@ class glueline:object
 		
 
 		result("------- Script Started at "+datestamp()+" --------\n")
-		result("  Milling will be stopped when "+typeofhole+" area of "+threshold_um2+" um^2 is detected\n")
+		//result("  Milling will be stopped when "+typeofhole+" area of "+threshold_um2+" um^2 is detected\n")
 		//result("  "+name+": initialized\n")
 
 
@@ -365,8 +365,8 @@ class glueline:object
 }
 
 
-object test1 = alloc(glueline)
-test1.dialogParameters()
+//object test1 = alloc(glueline)
+//test1.dialogParameters()
 
 
 class gluelineParameterEntryDialog : uiframe

@@ -25,7 +25,7 @@ class ScriptStartDialog : uiframe
 		//result("LISTENERDIALOG: initialized\n")
 		PsDialog = DLGCreateDialog("Select Script", PSDialogItems)
 		
-		f1 = DLGCreatelabel("Please select image window and a script and press Start")
+		f1 = DLGCreatelabel("Please select image window and a script and press Ok")
 		PSDialog.DLGAddElement(f1)
 		
 		// create items and add them to dialog
