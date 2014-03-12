@@ -381,6 +381,7 @@ class userScriptFactory : object
 }
 
 
+// old definition
 
 /*class userScriptFactory : object
 {

@@ -1,3 +1,5 @@
+// install the script in the global tags
+SPScriptSet("testscript1", "test script")
 
 
 class testscript1:object
